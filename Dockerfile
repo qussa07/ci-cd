@@ -18,4 +18,4 @@ EXPOSE 8000
 
 # 7. Команда для запуска приложения
 # Замените на свою команду, например для FastAPI: uvicorn main:app --host 0.0.0.0 --port 8000
-CMD ["python", "app.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
