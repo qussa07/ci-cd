@@ -1,7 +1,7 @@
-pydantic~=2.11.9
-sqlalchemy~=2.0.43
-fastapi~=0.118.0
-jose~=1.0.0
-python-jose~=3.5.0
-passlib~=1.7.4
-uvicorn
+fastapi==0.111.0
+uvicorn==0.23.2
+sqlalchemy==2.0.21
+pydantic==2.6.1
+passlib==1.7.4
+argon2-cffi==21.3.0
+python-jose==3.3.0
