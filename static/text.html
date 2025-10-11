@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auth endpoints test</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+      * {
+        margin: 0;
+        padding: 0;
+        font-family: "Ubuntu Mono", monospace;
+        --white: #fff;
+        --black: #121212;
+        --gray1: #e2ddd9;
+        --gray2: #d8c8b8;
+        --gray3: #a8a39d;
+        --gray4: #8d7966;
+        --bg: #f8f1e9;
+      }
+
+      main {
+        display: grid;
+        grid-template-areas: "forms res" "add res";
+        margin-top: 20vh;
+        margin-inline: auto;
+        width: fit-content;
+        gap: 24px;
+      }
+
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .forms {
+        width: fit-content;
+        display: flex;
+        gap: 32px;
+      }
+
+      .res {
+        flex: 1;
+        padding: 10px;
+        border-radius: 10px;
+        background-color: var(--white);
+      }
+
+      .form {
+        padding: 16px;
+        width: 300px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        border-radius: 10px;
+        background-color: var(--bg);
+        outline: 1px solid var(--gray1);
+      }
+      .title {
+        margin: 0;
+        margin-bottom: 12px;
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .input {
+        all: unset;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background-color: var(--white);
+        outline: 1px solid var(--gray1);
+      }
+      .input:hover {
+        outline: 2px dashed var(--gray2);
+      }
+      .input:focus-within {
+        outline: 2px dashed var(--gray4);
+      }
+      .submit {
+        all: unset;
+        margin-top: auto;
+        text-align: center;
+        padding: 10px 14px;
+        user-select: none;
+        border-radius: 10px;
+        background-color: var(--gray2);
+        outline: 1px solid var(--gray3);
+        font-weight: 500;
+        transition: background-color 300ms ease-out;
+      }
+      .submit:hover {
+        outline: 2px dashed var(--gray3);
+        cursor: pointer;
+        background-color: var(--white);
+      }
+      .submit:active {
+        transform: translateY(1px);
+        box-shadow: inset 0 0 4px 1px var(--gray1);
+        background-color: var(--bg);
+      }
+      .tokens {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .token {
+        display: flex;
+        gap: 8px;
+        justify-content: space-between;
+      }
+      .x {
+        all: unset;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        user-select: none;
+        border-radius: 10px;
+        background-color: var(--gray2);
+        outline: 1px solid var(--gray3);
+        font-weight: 500;
+        transition: background-color 300ms ease-out;
+      }
+      .x:hover {
+        background-color: var(--white);
+        cursor: pointer;
+      }
+      .x:active {
+        transform: translateY(1px);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="col" style="grid-area: forms">
+        <div class="forms">
+          <div class="form">
+            <p class="title">Логин</p>
+            <input id="login-email" class="input" placeholder="Эл. почта" />
+            <input id="login-pass" class="input" placeholder="Пароль" />
+            <button id="login-submit" class="submit">Войти</button>
+          </div>
+          <div class="form">
+            <p class="title">Регистрация</p>
+            <input id="reg-name" class="input" placeholder="Имя" />
+            <input id="reg-email" class="input" placeholder="Эл. почта" />
+            <input id="reg-pass" class="input" placeholder="Пароль" />
+            <button id="reg-submit" class="submit">Зарегистрироваться</button>
+          </div>
+        </div>
+        <div class="tokens">
+          <div class="token">
+            <span>access_token: <span id="access">null</span></span>
+            <button id="x-access" class="x">x</button>
+          </div>
+          <div class="token">
+            <span> refresh_token: <span id="refresh">null</span></span>
+            <button id="x-refresh" class="x">x</button>
+          </div>
+        </div>
+      </div>
+      <div class="forms" style="grid-area: res">
+        <div class="form">
+          <p class="title">Ответ сервера</p>
+          <p class="res">
+            <span style="display: block; margin-bottom: 10px">json</span>
+            <span id="response"></span>
+          </p>
+        </div>
+      </div>
+      <div class="forms" style="grid-area: add">
+        <div class="form">
+          <p class="title">Ping</p>
+          <p>Проверка аутентификации >:3</p>
+          <button id="ping-submit" class="submit">Ping!</button>
+        </div>
+        <div class="form">
+          <p class="title">Refresh токенов</p>
+          <p>Кидает запрос /api/refresh</p>
+          <button id="refresh-submit" class="submit">Refresh</button>
+        </div>
+      </div>
+    </main>
+  </body>
+  <script async>
+    /* Elements */
+    const loginEmailEl = document.getElementById("login-email");
+    const loginPassEl = document.getElementById("login-pass");
+    const regNameEl = document.getElementById("reg-name");
+    const regEmailEl = document.getElementById("reg-email");
+    const regPassEl = document.getElementById("reg-pass");
+    const loginSubmitEl = document.getElementById("login-submit");
+    const regSubmitEl = document.getElementById("reg-submit");
+
+    const pingSubmitEl = document.getElementById("ping-submit");
+    const refreshSubmitEl = document.getElementById("refresh-submit");
+
+    const responseEl = document.getElementById("response");
+
+    const accessEl = document.getElementById("access");
+    const refreshEl = document.getElementById("refresh");
+    const xAccessEl = document.getElementById("x-access");
+    const xRefreshEl = document.getElementById("x-refresh");
+    /* Element operations */
+    function setAccess(text) {
+      accessEl.innerText = text;
+      localStorage.setItem("access_token", text);
+    }
+    function setRefresh(text) {
+      refreshEl.innerText = text;
+      localStorage.setItem("refresh_token", text);
+    }
+    function setResponse(text) {
+      responseEl.innerText = text;
+    }
+    function removeAccess() {
+      accessEl.innerText = "null";
+      localStorage.removeItem("access_token");
+    }
+    function removeRefresh() {
+      refreshEl.innerText = "null";
+      localStorage.removeItem("refresh_token");
+    }
+    /* Handlers */
+    xAccessEl.onclick = removeAccess;
+    xRefreshEl.onclick = removeRefresh;
+
+    loginSubmitEl.onclick = async (e) => {
+      e.preventDefault();
+      const email = loginEmailEl.value;
+      const password = loginPassEl.value;
+
+      const res = await (
+        await fetch("http://localhost:3000/api/login", {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+          headers: new Headers({
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          }),
+        })
+      ).json();
+
+      setAccess(res.access_token);
+      setRefresh(res.refresh_token);
+      setResponse(res);
+    };
+
+    regSubmitEl.onclick = async (e) => {
+      e.preventDefault();
+      const name = regNameEl.value;
+      const email = regEmailEl.value;
+      const password = regPassEl.value;
+
+      const res = await (
+        await fetch("http://localhost:3000/api/register", {
+          method: "POST",
+          body: JSON.stringify({ name, email, password }),
+          headers: new Headers({
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          }),
+        })
+      ).json();
+
+      setAccess(res.access_token);
+      setRefresh(res.refresh_token);
+      setResponse(res);
+    };
+
+    pingSubmitEl.onclick = async (e) => {
+      e.preventDefault();
+
+      const access_token = localStorage.getItem("access_token");
+      const refresh_token = localStorage.getItem("refresh_token");
+
+      const res = await (
+        await fetch("http://localhost:3000/api/ping", {
+          method: "GET",
+          headers: new Headers({
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            access_token: access_token,
+            refresh_token: refresh_token,
+          }),
+        })
+      ).json();
+      setResponse(res);
+    };
+
+    refreshSubmitEl.onclick = async (e) => {
+      e.preventDefault();
+      const refresh_token = localStorage.getItem("refresh_token");
+
+      const res = await (
+        await fetch("http://localhost:3000/api/refresh", {
+          method: "GET",
+          headers: new Headers({
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            refresh_token: refresh_token,
+          }),
+        })
+      ).json();
+
+      setAccess(res.access_token);
+      setRefresh(res.refresh_token);
+      setResponse(res);
+    };
+  </script>
+</html>

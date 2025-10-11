@@ -52,6 +52,14 @@ app.add_middleware(
 )
 
 
+from fastapi.responses import FileResponse
+import os
+
+@app.get("/")
+def get_auth_page():
+    return FileResponse(os.path.join("static", "text.html"))
+
+
 @app.post("/api/register", response_model=UserRead)
 async def reg_user(item: Users_B, db_sess: Session = Depends(get_db)):
     if db_sess.query(Users).filter(Users.email == item.email).first():
