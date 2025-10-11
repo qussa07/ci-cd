@@ -45,7 +45,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # адрес React
+    allow_origins=["*"],  # адрес React
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -232,7 +232,7 @@
       const password = loginPassEl.value;
 
       const res = await (
-        await fetch("http://localhost:3000/api/login", {
+        await fetch("http://localhost:8000/api/login", {
           method: "POST",
           body: JSON.stringify({ email, password }),
           headers: new Headers({
@@ -254,7 +254,7 @@
       const password = regPassEl.value;
 
       const res = await (
-        await fetch("http://localhost:3000/api/register", {
+        await fetch("http://localhost:8000/api/register", {
           method: "POST",
           body: JSON.stringify({ name, email, password }),
           headers: new Headers({
@@ -276,7 +276,7 @@
       const refresh_token = localStorage.getItem("refresh_token");
 
       const res = await (
-        await fetch("http://localhost:3000/api/ping", {
+        await fetch("http://localhost:8000/api/ping", {
           method: "GET",
           headers: new Headers({
             "Content-Type": "application/json",
@@ -294,7 +294,7 @@
       const refresh_token = localStorage.getItem("refresh_token");
 
       const res = await (
-        await fetch("http://localhost:3000/api/refresh", {
+        await fetch("http://localhost:8000/api/refresh", {
           method: "GET",
           headers: new Headers({
             "Content-Type": "application/json",
