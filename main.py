@@ -44,7 +44,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None, db_sess: Session = Depends(get_db)):
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None, db_sess: Session):
     to_encode = data.copy()
     token_id = str(uuid4())
     expire = datetime.utcnow() + (expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
@@ -105,7 +105,7 @@ async def login_user(user: UserLogin, db_sess: Session = Depends(get_db)):
     if not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Invalid email or password")
     access_token = create_access_token(data={"sub": str(db_user.id)})
-    refresh_token = create_refresh_token(data={"sub": str(db_user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(db_user.id)}, db_sess=db_sess)
     return {"access_token": access_token, "refresh_token": refresh_token , "token_type": "bearer"}
 
 
