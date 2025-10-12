@@ -105,7 +105,7 @@ async def login_user(user: UserLogin, db_sess: Session = Depends(get_db)):
     if not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Invalid email or password")
     access_token = create_access_token(data={"sub": str(db_user.id)})
-    refresh_token = create_refresh_token(data={"sub":str(db_user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(db_user.id)})
     return {"access_token": access_token, "refresh_token": refresh_token , "token_type": "bearer"}
 
 
@@ -136,7 +136,8 @@ def read_users_me(current_user: Users = Depends(get_current_user)):
 def refresh_token(refresh_token: str, db_sess: Session = Depends(get_db)):
     try:
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-        token_in_db = db_sess.query(Re_token).filter(Re_token.id == payload["id"]).first().revoked
+        token_id = payload["jti"]
+        token_in_db = db_sess.query(Re_token).filter(Re_token.id == token_id).first()
         if not token_in_db:
             raise HTTPException(401, "Токен не найден")
         if token_in_db.first().revoked: # проверяет рабочий ли токен, не отлетел ли уже по времени
