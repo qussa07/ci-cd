@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Union, Optional
+from uuid import uuid4
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import sqlalchemy
@@ -13,12 +14,14 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from data.Users import Users_B, Users, UserRead
+from data.orm_refresh import Re_tokenBase, Re_token
 
 
 
 SECRET_KEY = "supersecretkey"  # ⚠️ вынеси в .env
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
 app = FastAPI()
@@ -37,10 +40,25 @@ def get_db():
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "accses"})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None, db_sess: Session = Depends(get_db)):
+    to_encode = data.copy()
+    token_id = str(uuid4())
+    expire = datetime.utcnow() + (expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
+    to_encode.update({"exp": expire, "type": "refresh", "jti": token_id})
+    new_REtoken = Re_token(
+        id=token_id,
+        user_id= int(data["sub"]),
+        revoked=False,
+        expires_at= expire
+    )
+    db_sess.add(new_REtoken)
+    db_sess.commit()
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
 
 
 app.add_middleware(
@@ -87,7 +105,8 @@ async def login_user(user: UserLogin, db_sess: Session = Depends(get_db)):
     if not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Invalid email or password")
     access_token = create_access_token(data={"sub": str(db_user.id)})
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token = create_refresh_token(data={"sub":str(db_user.id)})
+    return {"access_token": access_token, "refresh_token": refresh_token , "token_type": "bearer"}
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -112,6 +131,22 @@ def read_users_me(current_user: Users = Depends(get_current_user)):
         "name": current_user.name,
         "email": current_user.email
     }
+
+@app.post("/api/refresh")
+def refresh_token(refresh_token: str, db_sess: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        token_in_db = db_sess.query(Re_token).filter(Re_token.id == payload["id"]).first().revoked
+        if not token_in_db:
+            raise HTTPException(401, "Токен не найден")
+        if token_in_db.first().revoked: # проверяет рабочий ли токен, не отлетел ли уже по времени
+            raise HTTPException(401, "Токен отозван")
+        if payload.get("type") != "refresh":
+            raise HTTPException(401, "Неверный тип токена")
+        access_token = create_access_token(data={"sub": str(payload["user_id"])})
+        return {"access_token": access_token, "token_type": "bearer"}
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Невалидный токен")
 
 
 
