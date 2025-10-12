@@ -140,14 +140,15 @@ def refresh_token(refresh_token: str, db_sess: Session = Depends(get_db)):
         token_in_db = db_sess.query(Re_token).filter(Re_token.id == token_id).first()
         if not token_in_db:
             raise HTTPException(401, "Токен не найден")
-        if token_in_db.first().revoked: # проверяет рабочий ли токен, не отлетел ли уже по времени
+        if token_in_db.revoked:
             raise HTTPException(401, "Токен отозван")
         if payload.get("type") != "refresh":
             raise HTTPException(401, "Неверный тип токена")
-        access_token = create_access_token(data={"sub": str(payload["user_id"])})
+        access_token = create_access_token(data={"sub": str(payload["sub"])})
         return {"access_token": access_token, "token_type": "bearer"}
     except JWTError:
         raise HTTPException(status_code=401, detail="Невалидный токен")
+
 
 
 
