@@ -132,7 +132,7 @@ def read_users_me(current_user: Users = Depends(get_current_user)):
         "email": current_user.email
     }
 
-@app.post("/api/refresh")
+@app.get("/api/refresh")
 def refresh_token(refresh_token: str, db_sess: Session = Depends(get_db)):
     try:
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
