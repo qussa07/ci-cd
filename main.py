@@ -15,6 +15,7 @@ from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from data.Users import Users_B, Users, UserRead
 from data.orm_refresh import Re_tokenBase, Re_token
+from data.RequestsRefresh import RefreshRequest
 
 
 
@@ -132,10 +133,10 @@ def read_users_me(current_user: Users = Depends(get_current_user)):
         "email": current_user.email
     }
 
-@app.get("/api/refresh")
-def refresh_token(refresh_token: str, db_sess: Session = Depends(get_db)):
+@app.post("/api/refresh")
+def refresh_token(request: RefreshRequest, db_sess: Session = Depends(get_db)):
     try:
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(request.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
         token_id = payload["jti"]
         token_in_db = db_sess.query(Re_token).filter(Re_token.id == token_id).first()
         if not token_in_db:
